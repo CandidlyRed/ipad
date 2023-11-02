@@ -1,38 +1,78 @@
 .App {
-  text-align: center;
+  height: 100vh;
+  padding: 0;
+  margin: 0;
+  flex: 1;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.container {
+  width: 61%;
+  height: 63%;
+  margin: 0.75%;
+  float: left;
+  border: 1px solid black;
+  box-sizing: border-box;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.info {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  z-index: 1000;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+a {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  align-items: center;
+}
+.gh-icon {
+  width: 30px;
+  height: 30px;
 }
 
-.App-link {
-  color: #61dafb;
+input {
+  width: 5%;
+  padding: 5px;
+  margin-right: 10px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.buttons {
+  display: flex; /* Arrange buttons and input horizontally */
+  align-items: center; /* Vertically align items */
+  padding: 10px; /* Add padding for spacing */
+  background-color: #f0f0f0; /* Background color for the button container */
+  width: 61%
+}
+
+.buttons button {
+  padding: 10px 20px; /* Add padding to buttons */
+  margin-right: 10px; /* Add margin between buttons */
+  background-color: #007bff; /* Button background color */
+  color: #fff; /* Button text color */
+  border: none; /* Remove button border */
+  cursor: pointer; /* Change cursor on hover */
+}
+
+.buttons button:hover {
+  background-color: #0056b3; /* Button background color on hover */
+}
+
+.load-button {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  margin-right: 10px;
+  margin-left: 10px;
+}
+
+.load-button input {
+  display: none; /* Hide the input field */
+}
+
+.load-button:hover {
+  background-color: #0056b3;
 }
