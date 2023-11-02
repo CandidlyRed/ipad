@@ -16,6 +16,7 @@ export class StlViewer extends Component {
   constructor(props) {
     super(props);
 
+    this.mesh = null;
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(750, window.innerWidth / window.innerHeight, 1, 2000);
     this.renderer = new THREE.WebGLRenderer();
@@ -34,6 +35,13 @@ export class StlViewer extends Component {
     this.loadSTLModel();
     this.setupWindowResizeHandler();
     this.animate();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.rescaleValue !== prevProps.rescaleValue) {
+      this.mesh.scale.set(this.props.rescaleValue, this.props.rescaleValue, this.props.rescaleValue);
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   setupScene() {
@@ -58,20 +66,21 @@ export class StlViewer extends Component {
       const material = new THREE.MeshMatcapMaterial({
         color: 0xffffff,
       });
-      const mesh = new THREE.Mesh(geometry, material);
+      this.mesh = new THREE.Mesh(geometry, material);
 
-      mesh.geometry.computeVertexNormals(true);
-      mesh.geometry.center();
+      this.mesh.geometry.computeVertexNormals(true);
+      this.mesh.geometry.center();
 
-      mesh.scale.set(this.props.rescaleValue, this.props.rescaleValue, this.props.rescaleValue);
+      this.mesh.scale.set(this.props.rescaleValue, this.props.rescaleValue, this.props.rescaleValue);
 
-      this.scene.add(mesh);
+      this.scene.add(this.mesh);
 
-      mesh.rotation.x = -1.2;
-
-      const box3 = new THREE.Box3().setFromObject(mesh);
+      const box3 = new THREE.Box3().setFromObject(this.mesh);
       const size = new THREE.Vector3();
-      box3.getSize(size);
+      console.log(box3.getSize(size));
+      const boxHelper = new THREE.Box3Helper(box3, 0xff0000); // Specify the color you want
+      this.scene.add(boxHelper);
+      //For bounding box, allow user to input left and right corner of box, then iterate to select which one
 
       this.setState((prevState) => ({
         animateCallbacks: [...prevState.animateCallbacks, this.rotateModel],
