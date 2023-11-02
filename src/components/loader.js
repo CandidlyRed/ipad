@@ -1,132 +1,111 @@
-import React from 'react';
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import pathToStl from "../g.stl";
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
-import PropTypes from 'prop-types'
+import React, { Component } from 'react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
+import PropTypes from 'prop-types';
+
+import pathToStl from '../g.stl';
 
 const loader = new STLLoader();
 
-function createAnimate({ scene, camera, renderer }) {
-  const triggers = [];
+export class StlViewer extends Component {
+  static propTypes = {
+    rescaleValue: PropTypes.number,
+  };
 
-  function animate() {
-    requestAnimationFrame(animate);
+  constructor(props) {
+    super(props);
 
-    triggers.forEach((trigger) => {
-      trigger();
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(750, window.innerWidth / window.innerHeight, 1, 2000);
+    this.renderer = new THREE.WebGLRenderer();
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+
+    this.controls.maxDistance = 700;
+    this.controls.minDistance = 100;
+
+    this.state = {
+      animateCallbacks: [],
+    };
+  }
+
+  componentDidMount() {
+    this.setupScene();
+    this.loadSTLModel();
+    this.setupWindowResizeHandler();
+    this.animate();
+  }
+
+  setupScene() {
+    this.renderer.setSize(0.6 * window.innerWidth, 0.6 * window.innerHeight);
+    this.mount.appendChild(this.renderer.domElement);
+
+    this.camera.position.z = 500;
+
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cube = new THREE.Mesh(geometry, material);
+
+    this.scene.add(cube);
+
+    const secondaryLight = new THREE.PointLight(0xff0000, 1, 100);
+    secondaryLight.position.set(5, 5, 5);
+    this.scene.add(secondaryLight);
+  }
+
+  loadSTLModel() {
+    loader.load(pathToStl, (geometry) => {
+      const material = new THREE.MeshMatcapMaterial({
+        color: 0xffffff,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+
+      mesh.geometry.computeVertexNormals(true);
+      mesh.geometry.center();
+
+      mesh.scale.set(this.props.rescaleValue, this.props.rescaleValue, this.props.rescaleValue);
+
+      this.scene.add(mesh);
+
+      mesh.rotation.x = -1.2;
+
+      const box3 = new THREE.Box3().setFromObject(mesh);
+      const size = new THREE.Vector3();
+      box3.getSize(size);
+
+      this.setState((prevState) => ({
+        animateCallbacks: [...prevState.animateCallbacks, this.rotateModel],
+      }));
+    });
+  }
+
+  setupWindowResizeHandler() {
+    window.addEventListener('resize', this.handleWindowResize, false);
+  }
+
+  handleWindowResize = () => {
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(0.6 * window.innerWidth, 0.6 * window.innerHeight);
+  };
+
+  animate = () => {
+    requestAnimationFrame(this.animate);
+
+    this.state.animateCallbacks.forEach((callback) => {
+      callback();
     });
 
-    renderer.render(scene, camera);
-  }
-  function addTrigger(cb) {
-    if (typeof cb === "function") triggers.push(cb);
-  }
-  function offTrigger(cb) {
-    const triggerIndex = triggers.indexOf(cb);
-    if (triggerIndex !== -1) {
-      triggers.splice(triggerIndex, 1);
-    }
-  }
-
-  return {
-    animate,
-    addTrigger,
-    offTrigger
+    this.renderer.render(this.scene, this.camera);
   };
+
+  rotateModel = () => {
+    // You can add rotation logic here
+  };
+
+  render() {
+    return <div ref={(ref) => (this.mount = ref)} />;
+  }
 }
 
-export class StlViewer extends React.Component {
-    
-    static propTypes = {
-        file: PropTypes.object,
-        width: PropTypes.number,
-        height: PropTypes.number,
-    };
-    
-    componentDidMount() {
-        this.renderModel(this.props);
-        }
-
-    renderModel(props) {
-        
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(
-        750,
-        window.innerWidth / window.innerHeight,
-        1,
-        2000);
-
-        loader.load(pathToStl, (geometry) => {
-        const material = new THREE.MeshMatcapMaterial({
-            color: 0xffffff,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-
-        mesh.geometry.computeVertexNormals(true);
-        mesh.geometry.center();
-
-        mesh.scale.set(props.rescaleValue, props.rescaleValue, props.rescaleValue);
-
-        scene.add(mesh);
-
-        mesh.rotation.x = -1.2;
-
-        let box3 = new THREE.Box3().setFromObject(mesh);
-        let size = new THREE.Vector3();
-        console.log(box3.getSize(size));
-
-        animate.addTrigger(() => {
-            
-            // mesh.rotation.x += 0.05;
-            // mesh.rotation.y += 0.05;
-        });
-        });
-
-        
-
-
-        const renderer = new THREE.WebGLRenderer();
-
-        const controls = new OrbitControls(camera, renderer.domElement);
-
-        controls.maxDistance = 700;
-        controls.minDistance = 100;
-
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
-
-        /**
-         * Light setup
-         */
-        const secondaryLight = new THREE.PointLight(0xff0000, 1, 100);
-        secondaryLight.position.set(5, 5, 5);
-        scene.add(secondaryLight);
-
-        renderer.setSize(.6*window.innerWidth, .6*window.innerHeight);
-        this.mount.appendChild(renderer.domElement);
-
-        function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-
-        renderer.setSize(.6*window.innerWidth, .6*window.innerHeight);
-        }
-
-        window.addEventListener("resize", onWindowResize, false);
-
-        const animate = createAnimate({ scene, camera, renderer });
-
-        camera.position.z = 500;
-
-        animate.animate();
-
-
-    }
-    render() {
-        return <div 
-            ref={(ref) => (this.mount = ref)} />;
-    }
-}
+export default StlViewer;
