@@ -25,6 +25,8 @@ export class StlViewer extends Component {
     this.controls.maxDistance = 700;
     this.controls.minDistance = 100;
 
+    this.boundingboxes = [];
+
     this.state = {
       animateCallbacks: [],
     };
@@ -78,9 +80,14 @@ export class StlViewer extends Component {
       const box3 = new THREE.Box3().setFromObject(this.mesh);
       const size = new THREE.Vector3();
       console.log(box3.getSize(size));
-      const boxHelper = new THREE.Box3Helper(box3, 0xff0000); // Specify the color you want
-      this.scene.add(boxHelper);
+      this.boundingboxes.push(box3);
+      console.log(this.boundingboxes);
       //For bounding box, allow user to input left and right corner of box, then iterate to select which one
+      for (let i = 0; i < this.boundingboxes.length; i++) {
+        const boxHelper = new THREE.Box3Helper(this.boundingboxes[i], 0xff0000);
+        this.scene.add(boxHelper);
+      }
+    
 
       this.setState((prevState) => ({
         animateCallbacks: [...prevState.animateCallbacks, this.rotateModel],

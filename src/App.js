@@ -19,10 +19,6 @@ class App extends Component {
     });
   }
 
-  handleRescale = () => {
-    // Implement your rescale logic here if needed
-  }
-
   toggleMeasuring = () => {
     this.setState((prevState) => ({ isMeasuring: !prevState.isMeasuring }));
   }
@@ -37,20 +33,18 @@ class App extends Component {
     return (
       <div className="App">
         <div className="buttons">
-          <p className="loaded-file-message">Loaded STL File: {loadedFileName}</p>
-          <label className="load-button" htmlFor="obj-file">
-            Load STL by file
+            <label className="load-button" htmlFor="obj-file">
+            Load
             <input
-              type="file"
-              name="obj-file"
-              id="obj-file"
-              onChange={this.handleFileChange}
-              style={{ display: 'none' }}
+                type="file"
+                name="obj-file"
+                id="obj-file"
+                onChange={this.handleFileChange}
+                style={{ display: 'none' }}
             />
-          </label>
-          <button onClick={this.handleRescale}>
-            Rescale
-          </button>
+            </label>
+            <p className="loaded-file-message">Loaded STL File: {loadedFileName}</p>
+            <p>Rescale: </p>
           <input
             type="number"
             step="0.1"
