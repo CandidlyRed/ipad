@@ -3,19 +3,15 @@ import './App.css';
 import { StlViewer } from "./components/loader.js";
 
 class App extends Component {
-  constructor() {
-    super();
-    this.state = {
-      stlFile: null,
-      rescaleValue: 1.0,
-      isMeasuring: false,
-      isHighlighting: false,
-      loadedFileName: "",
-    };
-  }
+  state = {
+    stlFile: null,
+    rescaleValue: 1.0,
+    isMeasuring: false,
+    isHighlighting: false,
+    loadedFileName: "",
+  };
 
   handleFileChange = (e) => {
-    console.log(e.target.files);
     const file = e.target.files[0];
     this.setState({
       stlFile: file,
@@ -23,11 +19,25 @@ class App extends Component {
     });
   }
 
+  handleRescale = () => {
+    // Implement your rescale logic here if needed
+  }
+
+  toggleMeasuring = () => {
+    this.setState((prevState) => ({ isMeasuring: !prevState.isMeasuring }));
+  }
+
+  toggleHighlighting = () => {
+    this.setState((prevState) => ({ isHighlighting: !prevState.isHighlighting }));
+  }
+
   render() {
+    const { loadedFileName, rescaleValue, isMeasuring, isHighlighting, stlFile } = this.state;
+
     return (
       <div className="App">
         <div className="buttons">
-          <p className="loaded-file-message">Loaded STL File: {this.state.loadedFileName}</p>
+          <p className="loaded-file-message">Loaded STL File: {loadedFileName}</p>
           <label className="load-button" htmlFor="obj-file">
             Load STL by file
             <input
@@ -44,25 +54,25 @@ class App extends Component {
           <input
             type="number"
             step="0.1"
-            value={this.state.rescaleValue}
+            value={rescaleValue}
             onChange={(e) => this.setState({ rescaleValue: parseFloat(e.target.value) })}
           />
-          <button onClick={() => this.setState({ isMeasuring: !this.state.isMeasuring })}>
-            {this.state.isMeasuring ? "Stop Measure" : "Measure"}
+          <button onClick={this.toggleMeasuring}>
+            {isMeasuring ? "Stop Measure" : "Measure"}
           </button>
-          <button onClick={() => this.setState({ isHighlighting: !this.state.isHighlighting })}>
-            {this.state.isHighlighting ? "Stop Highlight" : "Highlight"}
+          <button onClick={this.toggleHighlighting}>
+            {isHighlighting ? "Stop Highlight" : "Highlight"}
           </button>
         </div>
         <div className="container" id="div2">
-          {this.state.stlFile ? (
+          {stlFile && (
             <StlViewer
-              file={this.state.stlFile}
-              rescaleValue={this.state.rescaleValue}
-              isMeasuring={this.state.isMeasuring}
-              isHighlighting={this.state.isHighlighting}
+              file={stlFile}
+              rescaleValue={rescaleValue}
+              isMeasuring={isMeasuring}
+              isHighlighting={isHighlighting}
             />
-          ) : null}
+          )}
         </div>
       </div>
     );
