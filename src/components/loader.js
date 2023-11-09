@@ -4,12 +4,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import PropTypes from 'prop-types';
 
-import pathToStl from '../g.stl';
-
 const loader = new STLLoader();
 
 export class StlViewer extends Component {
   static propTypes = {
+    file: PropTypes.instanceOf(ArrayBuffer),
     rescaleValue: PropTypes.number,
   };
 
@@ -25,7 +24,7 @@ export class StlViewer extends Component {
     this.controls.maxDistance = 700;
     this.controls.minDistance = 100;
 
-    this.boundingboxes = [];
+    this.boundingboxes = [[(1000,1000,1000),(-1000,-1000,-1000)]];
 
     this.state = {
       animateCallbacks: [],
@@ -42,6 +41,14 @@ export class StlViewer extends Component {
   componentDidUpdate(prevProps) {
     if (this.props.rescaleValue !== prevProps.rescaleValue) {
       this.mesh.scale.set(this.props.rescaleValue, this.props.rescaleValue, this.props.rescaleValue);
+      for (let i = 0; i < this.boundingboxes.length; i++) {
+        const vec1 = new THREE.Vector3(this.boundingboxes[i][0][0],this.boundingboxes[i][0][1],this.boundingboxes[i][0][2]);
+        const vec2 = new THREE.Vector3(this.boundingboxes[i][1][0],this.boundingboxes[i][1][1],this.boundingboxes[i][1][2]);
+        const box3 = new THREE.Box3().set(vec1,vec2);
+        box3.expandByScalar(this.props.rescaleValue);
+        const boxHelper = new THREE.Box3Helper(box3, 0xff0000);
+        this.scene.add(boxHelper)
+      }
       this.renderer.render(this.scene, this.camera);
     }
   }
@@ -64,7 +71,8 @@ export class StlViewer extends Component {
   }
 
   loadSTLModel() {
-    loader.load(pathToStl, (geometry) => {
+    console.log(this.props.file)
+    const geometry = loader.parse(this.props.file)
       const material = new THREE.MeshMatcapMaterial({
         color: 0xffffff,
       });
@@ -77,14 +85,19 @@ export class StlViewer extends Component {
 
       this.scene.add(this.mesh);
 
-      const box3 = new THREE.Box3().setFromObject(this.mesh);
-      const size = new THREE.Vector3();
-      console.log(box3.getSize(size));
-      this.boundingboxes.push(box3);
+      
+      
+      // const size = new THREE.Vector3();
+      // console.log(box3.getSize(size));
+      // this.boundingboxes.push(box3);
       console.log(this.boundingboxes);
       //For bounding box, allow user to input left and right corner of box, then iterate to select which one
       for (let i = 0; i < this.boundingboxes.length; i++) {
-        const boxHelper = new THREE.Box3Helper(this.boundingboxes[i], 0xff0000);
+        const vec1 = new THREE.Vector3(this.boundingboxes[i][0][0],this.boundingboxes[i][0][1],this.boundingboxes[i][0][2]);
+        const vec2 = new THREE.Vector3(this.boundingboxes[i][1][0],this.boundingboxes[i][1][1],this.boundingboxes[i][1][2]);
+        const box3 = new THREE.Box3().setFromPoints(vec1,vec2);
+        box3.expandByScalar(this.props.rescaleValue);
+        const boxHelper = new THREE.Box3Helper(box3, 0xff0000);
         this.scene.add(boxHelper);
       }
     
@@ -92,7 +105,7 @@ export class StlViewer extends Component {
       this.setState((prevState) => ({
         animateCallbacks: [...prevState.animateCallbacks, this.rotateModel],
       }));
-    });
+    // });
   }
 
   setupWindowResizeHandler() {

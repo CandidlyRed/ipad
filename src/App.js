@@ -12,11 +12,15 @@ class App extends Component {
   };
 
   handleFileChange = (e) => {
+    var reader = new FileReader();
     const file = e.target.files[0];
-    this.setState({
-      stlFile: file,
-      loadedFileName: file ? file.name : "",
-    });
+    reader.onload = (f) => {
+      this.setState({
+        stlFile: f.target.result,
+        loadedFileName: file ? file.name : "",
+      });
+    };
+    reader.readAsArrayBuffer(e.target.files[0]);
   }
 
   toggleMeasuring = () => {
