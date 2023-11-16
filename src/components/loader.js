@@ -27,6 +27,7 @@ export class StlViewer extends Component {
   static propTypes = {
     file: PropTypes.instanceOf(ArrayBuffer),
     rescaleValue: PropTypes.number,
+    isMeasuring: PropTypes.bool,
     isHighlighting: PropTypes.bool,
   };
 
@@ -48,6 +49,9 @@ export class StlViewer extends Component {
     this.boundingboxes = [[150, 150, 150, -150, -150, -150]];
     this.box3Arr = [];
     this.box3HelperArr = [];
+
+    this.measurePoints = [];
+    this.measureLabel = 0;
 
     this.state = {
       animateCallbacks: [],
@@ -271,6 +275,11 @@ export class StlViewer extends Component {
   render() {
     return (
       <div>
+        {this.props.isMeasuring && (
+          <div className="buttons2">
+            <label>Distance: {this.measureLabel}</label>
+          </div>
+        )}
         {this.props.isHighlighting && (
           <div>
           <div className="buttons2">
@@ -306,7 +315,7 @@ export class StlViewer extends Component {
         </div>
         )}
   
-        <div ref={(ref) => (this.mount = ref)} />
+        <div ref={(ref) => (this.mount = ref)} onMouseDown={this.handleMouseDown}/>
       </div>
     );
   }
