@@ -62,6 +62,9 @@ export class StlViewer extends Component {
   }
 
   componentDidUpdate(prevProps) {
+    if (this.props.isHighlighting !== prevProps.isHighlighting) {
+      this.rebuildBoxes();
+    }
     if (this.props.file !== prevProps.file) {
       this.scene.remove(this.mesh);
       const geometry = loader.parse(this.props.file)
@@ -120,26 +123,27 @@ export class StlViewer extends Component {
       // this.boundingboxes.push(box3);
       // console.log(this.boundingboxes);
       //For bounding box, allow user to input left and right corner of box, then iterate to select which one
-      for (let i = 0; i < this.boundingboxes.length; i++) {
-        const vec1 = new THREE.Vector3(this.boundingboxes[i][0],this.boundingboxes[i][1],this.boundingboxes[i][2]);
-        const vec2 = new THREE.Vector3(this.boundingboxes[i][3],this.boundingboxes[i][4],this.boundingboxes[i][5]);
-        const box3 = new THREE.Box3();
-        box3.setFromPoints([vec1,vec2]);
-        scaleBox3(box3,this.props.rescaleValue);
-        this.box3Arr.push(box3);
-        let color = 0xff0000;
-        if (i === this.boundingBoxIndex) {
-          color = 0xffffff;
-          const size = new THREE.Vector3();
-          this.currentDimension = box3.getSize(size);
-          const cent = new THREE.Vector3();
-          this.currentCenter = box3.getCenter(cent);
+      if (this.props.isHighlighting) {
+        for (let i = 0; i < this.boundingboxes.length; i++) {
+          const vec1 = new THREE.Vector3(this.boundingboxes[i][0],this.boundingboxes[i][1],this.boundingboxes[i][2]);
+          const vec2 = new THREE.Vector3(this.boundingboxes[i][3],this.boundingboxes[i][4],this.boundingboxes[i][5]);
+          const box3 = new THREE.Box3();
+          box3.setFromPoints([vec1,vec2]);
+          scaleBox3(box3,this.props.rescaleValue);
+          this.box3Arr.push(box3);
+          let color = 0xff0000;
+          if (i === this.boundingBoxIndex) {
+            color = 0xffffff;
+            const size = new THREE.Vector3();
+            this.currentDimension = box3.getSize(size);
+            const cent = new THREE.Vector3();
+            this.currentCenter = box3.getCenter(cent);
+          }
+          const boxHelper = new THREE.Box3Helper(box3, color);
+          this.box3HelperArr.push(boxHelper);
+          this.scene.add(boxHelper);
         }
-        const boxHelper = new THREE.Box3Helper(box3, color);
-        this.box3HelperArr.push(boxHelper);
-        this.scene.add(boxHelper);
       }
-    
 
       this.setState((prevState) => ({
         animateCallbacks: [...prevState.animateCallbacks, this.rotateModel],
@@ -156,29 +160,31 @@ export class StlViewer extends Component {
     this.box3HelperArr = [];
   
     // Iterate through boundingboxes and create new boxes
-    this.boundingboxes.forEach((bbox, index) => {
-      const vec1 = new THREE.Vector3(bbox[0], bbox[1], bbox[2]);
-      const vec2 = new THREE.Vector3(bbox[3], bbox[4], bbox[5]);
-      const box3 = new THREE.Box3();
-      box3.setFromPoints([vec1, vec2]);
-      scaleBox3(box3, this.props.rescaleValue);
-      this.box3Arr.push(box3);
-  
-      
-  
-      let color = 0xff0000;
-      if (index === this.boundingBoxIndex) {
-        color = 0xffffff;
-        const size = new THREE.Vector3();
-        this.currentDimension = box3.getSize(size);
-        const cent = new THREE.Vector3();
-        this.currentCenter = box3.getCenter(cent);
-      }
+    if (this.props.isHighlighting) {
+      this.boundingboxes.forEach((bbox, index) => {
+        const vec1 = new THREE.Vector3(bbox[0], bbox[1], bbox[2]);
+        const vec2 = new THREE.Vector3(bbox[3], bbox[4], bbox[5]);
+        const box3 = new THREE.Box3();
+        box3.setFromPoints([vec1, vec2]);
+        scaleBox3(box3, this.props.rescaleValue);
+        this.box3Arr.push(box3);
+    
+        
+    
+        let color = 0xff0000;
+        if (index === this.boundingBoxIndex) {
+          color = 0xffffff;
+          const size = new THREE.Vector3();
+          this.currentDimension = box3.getSize(size);
+          const cent = new THREE.Vector3();
+          this.currentCenter = box3.getCenter(cent);
+        }
 
-      const boxHelper = new THREE.Box3Helper(box3, color);
-      this.box3HelperArr.push(boxHelper);
-      this.scene.add(boxHelper);
-    });
+        const boxHelper = new THREE.Box3Helper(box3, color);
+        this.box3HelperArr.push(boxHelper);
+        this.scene.add(boxHelper);
+      });
+    }
   
     // Update state to trigger a re-render
     this.setState((prevState) => ({
