@@ -51,7 +51,9 @@ export class StlViewer extends Component {
     this.box3HelperArr = [];
 
     this.measurePoints = [];
-    this.measureLabel = 0;
+    this.pointsVisualization = [];
+    this.pointLine = null;
+    this.curDistance = 0;
 
     this.state = {
       animateCallbacks: [],
@@ -121,11 +123,6 @@ export class StlViewer extends Component {
 
       this.scene.add(this.mesh);
 
-      
-      // const size = new THREE.Vector3();
-      // console.log(box3.getSize(size));
-      // this.boundingboxes.push(box3);
-      // console.log(this.boundingboxes);
       //For bounding box, allow user to input left and right corner of box, then iterate to select which one
       if (this.props.isHighlighting) {
         for (let i = 0; i < this.boundingboxes.length; i++) {
@@ -270,6 +267,66 @@ export class StlViewer extends Component {
       this.rebuildBoxes();
     }
   };
+
+  handleMouseDown = (event) => {
+    if (this.props.isMeasuring && this.measurePoints.length >= 2) {
+      this.measurePoints = [];
+      this.scene.remove(this.pointsVisualization[0]);
+      this.scene.remove(this.pointsVisualization[1]);
+      this.pointsVisualization = [];
+      this.scene.remove(this.pointLine);
+      this.pointLine = null;
+    }
+    if (this.props.isMeasuring && this.measurePoints.length < 2) {
+      const scaleX = this.renderer.domElement.clientWidth / (0.6 * window.innerWidth);
+      const scaleY = this.renderer.domElement.clientHeight / (0.6 * window.innerHeight);
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((event.clientX - rect.left) / this.renderer.domElement.clientWidth) * 2 - 1,
+        -((event.clientY - rect.top) / this.renderer.domElement.clientHeight) * 2 + 1
+      );
+      mouse.x *= scaleX;
+      mouse.y *= scaleY;
+      
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, this.camera);
+
+      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const intersection = new THREE.Vector3();
+      raycaster.ray.intersectPlane(plane, intersection);
+
+      this.measurePoints.push(intersection.clone());
+      // console.log(intersection.clone())
+      const sphereGeometry = new THREE.SphereGeometry(1, 10, 20);
+      const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      sphere.position.copy(this.measurePoints[this.measurePoints.length-1]);
+      this.pointsVisualization.push(sphere);
+      this.scene.add(sphere);
+      
+    }
+    if (this.measurePoints.length === 2) {
+      this.drawMeasurements()
+    };
+    this.setState((prevState) => ({
+      animateCallbacks: [...prevState.animateCallbacks, this.rotateModel],
+    }));
+  };
+
+  drawMeasurements = () => {
+    const distance = this.measurePoints[0].distanceTo(this.measurePoints[1]);
+    this.curDistance = distance;
+
+    let material = new THREE.LineBasicMaterial( { color: 0x00ffff } );
+    let geometry = new THREE.BufferGeometry().setFromPoints( this.measurePoints );
+    this.pointLine = new THREE.Line( geometry, material );
+    this.scene.add(this.pointLine);
+
+    this.setState((prevState) => ({
+      animateCallbacks: [...prevState.animateCallbacks, this.rotateModel],
+    }));
+  };
   
 
   render() {
@@ -277,7 +334,7 @@ export class StlViewer extends Component {
       <div>
         {this.props.isMeasuring && (
           <div className="buttons2">
-            <label>Distance: {this.measureLabel}</label>
+            <label>Distance: {this.curDistance}</label>
           </div>
         )}
         {this.props.isHighlighting && (
@@ -315,7 +372,7 @@ export class StlViewer extends Component {
         </div>
         )}
   
-        <div ref={(ref) => (this.mount = ref)} onMouseDown={this.handleMouseDown}/>
+        <div ref={(ref) => (this.mount = ref)} onClick={this.handleMouseDown}/>
       </div>
     );
   }
