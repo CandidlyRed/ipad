@@ -51,9 +51,13 @@ class App extends Component {
             <p>Rescale:&nbsp;</p>
           <input
             type="number"
-            step="0.1"
+            step="0.01"
             value={rescaleValue}
-            onChange={(e) => this.setState({ rescaleValue: parseFloat(e.target.value) })}
+            onChange={(e) => {
+              const parsedValue = parseFloat(e.target.value);
+              const newRescaleValue = parsedValue < 0.01 ? 0.01 : parsedValue;
+              this.setState({ rescaleValue: newRescaleValue });
+            }}
           />
           <button onClick={this.toggleMeasuring}>
             {isMeasuring ? "Stop Measure" : "Measure"}

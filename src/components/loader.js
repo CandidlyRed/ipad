@@ -7,6 +7,22 @@ import PropTypes from 'prop-types';
 
 const loader = new STLLoader();
 
+const scaleBox3 = (box, scale) => {
+  // Step 1: Get the center of the Box3
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+
+  // Step 2: Apply the scale to the dimensions
+  const newDimensions = new THREE.Vector3();
+  box.getSize(newDimensions);
+  newDimensions.multiplyScalar(scale);
+
+  const newMin = new THREE.Vector3().copy(center).sub(newDimensions.clone().multiplyScalar(0.5));
+  const newMax = new THREE.Vector3().copy(center).add(newDimensions.clone().multiplyScalar(0.5));
+
+  box.setFromPoints([newMin, newMax]);
+};
+
 export class StlViewer extends Component {
   static propTypes = {
     file: PropTypes.instanceOf(ArrayBuffer),
@@ -26,9 +42,12 @@ export class StlViewer extends Component {
     this.controls.maxDistance = 700;
     this.controls.minDistance = 100;
 
-    this.boundingBoxIndex = -1;
-    this.boundingboxes = [];
-    this.box3Arr = []
+    this.boundingBoxIndex = 0;
+    this.currentDimension = new THREE.Vector3( );
+    this.currentCenter = new THREE.Vector3( );
+    this.boundingboxes = [[150, 150, 150, -150, -150, -150]];
+    this.box3Arr = [];
+    this.box3HelperArr = [];
 
     this.state = {
       animateCallbacks: [],
@@ -59,15 +78,7 @@ export class StlViewer extends Component {
     }
     if (this.props.rescaleValue !== prevProps.rescaleValue) {
       this.mesh.scale.set(this.props.rescaleValue, this.props.rescaleValue, this.props.rescaleValue);
-      for (let i = 0; i < this.boundingboxes.length; i++) {
-        const vec1 = new THREE.Vector3(this.boundingboxes[i][0],this.boundingboxes[i][1],this.boundingboxes[i][2]);
-        const vec2 = new THREE.Vector3(this.boundingboxes[i][3],this.boundingboxes[i][4],this.boundingboxes[i][5]);
-        const box3 = new THREE.Box3();
-        box3.setFromPoints([vec1,vec2]);
-        box3.expandByScalar(this.props.rescaleValue);
-        const boxHelper = new THREE.Box3Helper(box3, 0xff0000);
-        this.scene.add(boxHelper)
-      }
+      this.rebuildBoxes();
       this.renderer.render(this.scene, this.camera);
     }
   }
@@ -114,12 +125,18 @@ export class StlViewer extends Component {
         const vec2 = new THREE.Vector3(this.boundingboxes[i][3],this.boundingboxes[i][4],this.boundingboxes[i][5]);
         const box3 = new THREE.Box3();
         box3.setFromPoints([vec1,vec2]);
+        scaleBox3(box3,this.props.rescaleValue);
         this.box3Arr.push(box3);
-        box3.expandByScalar(this.props.rescaleValue);
-        const size = new THREE.Vector3();
-        console.log(box3.getSize(size));
-        
-        const boxHelper = new THREE.Box3Helper(box3, 0xff0000);
+        let color = 0xff0000;
+        if (i === this.boundingBoxIndex) {
+          color = 0xffffff;
+          const size = new THREE.Vector3();
+          this.currentDimension = box3.getSize(size);
+          const cent = new THREE.Vector3();
+          this.currentCenter = box3.getCenter(cent);
+        }
+        const boxHelper = new THREE.Box3Helper(box3, color);
+        this.box3HelperArr.push(boxHelper);
         this.scene.add(boxHelper);
       }
     
@@ -127,8 +144,47 @@ export class StlViewer extends Component {
       this.setState((prevState) => ({
         animateCallbacks: [...prevState.animateCallbacks, this.rotateModel],
       }));
-    // });
   }
+
+  rebuildBoxes = () => {
+    // Clear existing boxes
+    this.box3Arr.forEach((box) => this.scene.remove(box));
+    this.box3HelperArr.forEach((boxHelper) => this.scene.remove(boxHelper));
+  
+    // Clear arrays
+    this.box3Arr = [];
+    this.box3HelperArr = [];
+  
+    // Iterate through boundingboxes and create new boxes
+    this.boundingboxes.forEach((bbox, index) => {
+      const vec1 = new THREE.Vector3(bbox[0], bbox[1], bbox[2]);
+      const vec2 = new THREE.Vector3(bbox[3], bbox[4], bbox[5]);
+      const box3 = new THREE.Box3();
+      box3.setFromPoints([vec1, vec2]);
+      scaleBox3(box3, this.props.rescaleValue);
+      this.box3Arr.push(box3);
+  
+      
+  
+      let color = 0xff0000;
+      if (index === this.boundingBoxIndex) {
+        color = 0xffffff;
+        const size = new THREE.Vector3();
+        this.currentDimension = box3.getSize(size);
+        const cent = new THREE.Vector3();
+        this.currentCenter = box3.getCenter(cent);
+      }
+
+      const boxHelper = new THREE.Box3Helper(box3, color);
+      this.box3HelperArr.push(boxHelper);
+      this.scene.add(boxHelper);
+    });
+  
+    // Update state to trigger a re-render
+    this.setState((prevState) => ({
+      animateCallbacks: [...prevState.animateCallbacks, this.rotateModel],
+    }));
+  };
 
   setupWindowResizeHandler() {
     window.addEventListener('resize', this.handleWindowResize, false);
@@ -158,14 +214,59 @@ export class StlViewer extends Component {
     const newBoundingBox = [50, 50, 50, -50, -50, -50];
     this.boundingboxes.push(newBoundingBox);
     this.boundingBoxIndex = this.boundingboxes.length - 1;
-    // this.componentDidUpdate(null);
-    this.forceUpdate();
+    this.rebuildBoxes();
   };
+
+  handleCornerChange = (e, v) => {
+    const newValue = e.target.value;
+    this.setState(
+      () => {
+        const newBoundingBoxes = this.boundingboxes;
+        newBoundingBoxes[this.boundingBoxIndex][v] = newValue;
+        return { boundingboxes: newBoundingBoxes };
+      },
+      () => {
+        this.rebuildBoxes();
+      }
+    );
+  };  
+
+  handlePrev = () => {
+    if (this.boundingBoxIndex > 0) {
+      this.boundingBoxIndex -= 1; 
+    } else {
+      this.boundingBoxIndex = this.boundingboxes.length - 1
+    }
+    this.rebuildBoxes();
+  };
+  
+  handleNext = () => {
+    if (this.boundingBoxIndex < this.boundingboxes.length - 1) {
+      this.boundingBoxIndex += 1;
+    } else {
+      this.boundingBoxIndex = 0
+    }
+    this.rebuildBoxes();
+  };
+
+  handleDelete = () => {
+    if (this.boundingboxes.length > 1) {
+      this.boundingboxes.splice(this.boundingBoxIndex, 1);
+  
+      if (this.boundingBoxIndex === this.boundingboxes.length) {
+        this.boundingBoxIndex -= 1;
+      }
+  
+      this.rebuildBoxes();
+    }
+  };
+  
 
   render() {
     return (
       <div>
         {this.props.isHighlighting && (
+          <div>
           <div className="buttons2">
             <button onClick={this.handlePrev}>Prev</button>
             <button onClick={this.handleNext}>Next</button>
@@ -173,20 +274,30 @@ export class StlViewer extends Component {
             <button onClick={this.handleDelete}>Delete</button>
   
             <form>
-              <label>
-                Left Corner: &nbsp;
-                <input type="text" name="leftCornerx" />
-                <input type="text" name="leftCornery" />
-                <input type="text" name="leftCornerz" />
-              </label>
-              <label>
-                Right Corner: &nbsp;
-                <input type="text" name="rightCornerx" />
-                <input type="text" name="rightCornery" />
-                <input type="text" name="rightCornerz" />
-              </label>
+              
+              {this.boundingBoxIndex !== -1 && (
+                <label>Dim: {JSON.stringify(this.currentDimension)} Center: {JSON.stringify(this.currentCenter)}</label>
+              )}
             </form>
           </div>
+          <div className="buttons2">
+
+          <form>
+            <label>
+              <label>
+                Corner 1: &nbsp;
+                <input type="text" name="leftCornerx" value={this.boundingboxes[this.boundingBoxIndex][0]} onChange={(e) => this.handleCornerChange(e,0)}/>
+                <input type="text" name="leftCornery" value={this.boundingboxes[this.boundingBoxIndex][1]} onChange={(e) => this.handleCornerChange(e,1)}/>
+                <input type="text" name="leftCornerz" value={this.boundingboxes[this.boundingBoxIndex][2]} onChange={(e) => this.handleCornerChange(e,2)}/>
+              </label>
+              Corner 2: &nbsp;
+              <input type="text" name="rightCornerx" value={this.boundingboxes[this.boundingBoxIndex][3]} onChange={(e) => this.handleCornerChange(e,3)}/>
+              <input type="text" name="rightCornery" value={this.boundingboxes[this.boundingBoxIndex][4]} onChange={(e) => this.handleCornerChange(e,4)}/>
+              <input type="text" name="rightCornerz" value={this.boundingboxes[this.boundingBoxIndex][5]} onChange={(e) => this.handleCornerChange(e,5)}/>
+            </label>
+          </form>
+        </div>
+        </div>
         )}
   
         <div ref={(ref) => (this.mount = ref)} />
