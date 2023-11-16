@@ -48,7 +48,7 @@ class App extends Component {
             />
             </label>
             <p className="loaded-file-message">Loaded STL File: {loadedFileName}</p>
-            <p>Rescale: </p>
+            <p>Rescale:&nbsp;</p>
           <input
             type="number"
             step="0.1"

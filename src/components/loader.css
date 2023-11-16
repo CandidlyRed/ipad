@@ -1,0 +1,40 @@
+.buttons2 {
+    display: flex; /* Arrange buttons and input horizontally */
+    align-items: center; /* Vertically align items */
+    padding: 10px; /* Add padding for spacing */
+    background-color: #f0f0f0; /* Background color for the button container */
+    width: 97.7%
+  }
+  
+  .buttons2 button {
+    padding: 10px 20px; /* Add padding to buttons */
+    margin-right: 10px; /* Add margin between buttons */
+    background-color: #007bff; /* Button background color */
+    color: #fff; /* Button text color */
+    border: none; /* Remove button border */
+    cursor: pointer; /* Change cursor on hover */
+  }
+  
+  .buttons2 button:hover {
+    background-color: #0056b3; /* Button background color on hover */
+  }
+  
+  .load-button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    margin-right: 10px;
+    margin-left: 10px;
+  }
+  
+  .load-button input {
+    display: none; /* Hide the input field */
+  }
+  
+  .load-button:hover {
+    background-color: #0056b3;
+  }
+  
